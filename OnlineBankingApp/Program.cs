@@ -10,6 +10,8 @@ using OnlineBankingApp.Entity.DbContexts;
 using OnlineBankingApp.Common.Interface;
 using OnlineBankingApp.Service;
 using OnlineBankingApp.Service.RabbitMQ;
+using OnlineBankingApp.Common.DTO.JWT;
+using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +30,12 @@ builder.Services.AddDbContext<BankingContext>(options => options.UseSqlite(build
 builder.Services.AddDbContext<UserContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("UserConnection")));
 
+
+// Load configuration
+var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>();
+var key = Encoding.ASCII.GetBytes(jwtSettings.Secret);
+
+// Configure JWT authentication
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -35,24 +43,26 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
     options.TokenValidationParameters = new TokenValidationParameters
     {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(key),
         ValidateIssuer = true,
         ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = "yourdomain.com",
-        ValidAudience = "yourdomain.com",
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("YourSecretKeyHere"))
+        ValidIssuer = jwtSettings.Issuer,
+        ValidAudience = jwtSettings.Audience
     };
 });
+
+builder.Services.AddScoped<IAccountService, AccountService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IJwtService, JwtService>(jwt => new JwtService(jwtSettings));
 
 // Register RabbitMQ services
 builder.Services.AddSingleton<MessageProducer>();
 builder.Services.AddSingleton<MessageConsumer>();
-
-builder.Services.AddScoped<IAccountService, AccountService>();
-builder.Services.AddScoped<IUserService, UserService>();
 
 
 builder.Services.AddSingleton<AsyncCircuitBreakerPolicy>(serviceProvider =>

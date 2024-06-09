@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using OnlineBankingApp.Common.DTO.User;
 using OnlineBankingApp.Common.Interface;
+using OnlineBankingApp.Service;
 
 
 namespace OnlineBankingApp.Controllers
@@ -8,10 +9,12 @@ namespace OnlineBankingApp.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IUserService _userService;
+        private readonly IJwtService _jwtService;
 
-        public AuthController(IUserService userService)
+        public AuthController(IUserService userService, IJwtService jwtService)
         {
             _userService = userService;
+            _jwtService = jwtService;
         }
 
         [HttpPost("register")]
@@ -25,14 +28,17 @@ namespace OnlineBankingApp.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] UserRequest request)
         {
-            var token = await _userService.LoginUserAsync(request);
+            var login = await _userService.LoginUserAsync(request);
 
-            if (token == string.Empty)
+            if (!login)
             {
                 return Unauthorized();
             }
 
-            return Ok(new { Token = token });
+            var token = _jwtService.GenerateSecurityToken(request.Username);
+
+            return string.IsNullOrEmpty(token) ? Unauthorized() : Ok(new { Token = token });
+           
         }
     }
 }

@@ -36,33 +36,15 @@ namespace OnlineBankingApp.Service
         }
 
 
-        public async Task<string> LoginUserAsync(UserRequest request)
+        public async Task<bool> LoginUserAsync(UserRequest request)
         {
             var user = await _userContext.Users.SingleOrDefaultAsync(u => u.Username == request.Username && u.Password == request.Password);
             if (user == null)
             {
-                return string.Empty;
+                return false;
             }
 
-            var token = GenerateJwtToken(request.Username);
-
-            return token;
-        }
-
-        private string GenerateJwtToken(string username)
-        {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_configuration["Jwt:Secret"]);
-
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, username) }),
-                Expires = DateTime.UtcNow.AddHours(1),
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-            };
-
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            return tokenHandler.WriteToken(token);
+            return true;
         }
 
 
