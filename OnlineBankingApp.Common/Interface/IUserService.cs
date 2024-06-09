@@ -11,6 +11,6 @@ namespace OnlineBankingApp.Common.Interface
     {
         public Task<bool> RegisterUserAsync(UserRequest request);
 
-        public Task<string> LoginUserAsync(UserRequest request);
+        public Task<bool> LoginUserAsync(UserRequest request);
     }
 }
