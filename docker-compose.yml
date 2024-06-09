@@ -10,20 +10,15 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
-
-  app:
-    image: mcr.microsoft.com/dotnet/aspnet:8.0
-    container_name: net_online_banking_app
+   
+  onlinebankingapp:
     build:
       context: .
       dockerfile: Dockerfile
     ports:
       - "5000:80"
-    depends_on:
-      - rabbitmq
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - RabbitMQ__HostName=rabbitmq
-      - RabbitMQ__UserName=guest
-      - RabbitMQ__Password=guest
-      - RabbitMQ__QueueName=message_queue
+    depends_on:
+      - rabbitmq
